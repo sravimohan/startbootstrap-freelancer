@@ -47,6 +47,15 @@ function clean() {
   return del(["./vendor/"]);
 }
 
+// Clean vendor
+function cleanDist() {
+  return del(["./dist/"]);
+}
+
+function sanitizeDist() {
+  return del(["./dist/node_modules"]);
+}
+
 // Bring third party dependencies from node_modules into vendor directory
 function modules() {
   // Bootstrap JS
@@ -63,9 +72,9 @@ function modules() {
     .pipe(gulp.dest('./vendor/jquery-easing'));
   // jQuery
   var jquery = gulp.src([
-      './node_modules/jquery/dist/*',
-      '!./node_modules/jquery/dist/core.js'
-    ])
+    './node_modules/jquery/dist/*',
+    '!./node_modules/jquery/dist/core.js'
+  ])
     .pipe(gulp.dest('./vendor/jquery'));
   return merge(bootstrapJS, fontAwesomeCSS, fontAwesomeWebfonts, jquery, jqueryEasing);
 }
@@ -113,6 +122,36 @@ function js() {
     .pipe(browsersync.stream());
 }
 
+function release() {
+  // css files
+  var cssFiles = gulp.src('./css/**/*.min.css')
+    .pipe(gulp.dest('./dist/css'));
+
+  // image files
+  var imgFiles = gulp.src('./img/**/*')
+    .pipe(gulp.dest('./dist/img'));
+
+  // html files
+  var htmlFiles = gulp.src(['./**/*.html'])
+    .pipe(gulp.dest('./dist/'));
+
+  // js files
+  var jsFiles = gulp.src('./js/**/*.min.js')
+    .pipe(gulp.dest('./dist/js'));
+
+  // vendor files
+  var vendorJsFiles = gulp.src('./vendor/**/*.min.js')
+    .pipe(gulp.dest('./dist/vendor'));
+
+  var vendorCssFiles = gulp.src('./vendor/**/*.min.css')
+    .pipe(gulp.dest('./dist/vendor'));
+
+  var vendorFontFiles = gulp.src('./vendor/fontawesome-free/webfonts/**/*')
+    .pipe(gulp.dest('./dist/vendor/fontawesome-free/webfonts'));
+
+  return merge(cssFiles, imgFiles, htmlFiles, jsFiles, vendorJsFiles, vendorCssFiles, vendorFontFiles);
+}
+
 // Watch files
 function watchFiles() {
   gulp.watch("./scss/**/*", css);
@@ -124,6 +163,7 @@ function watchFiles() {
 const vendor = gulp.series(clean, modules);
 const build = gulp.series(vendor, gulp.parallel(css, js));
 const watch = gulp.series(build, gulp.parallel(watchFiles, browserSync));
+const dist = gulp.series(cleanDist, build, release, sanitizeDist);
 
 // Export tasks
 exports.css = css;
@@ -133,3 +173,4 @@ exports.vendor = vendor;
 exports.build = build;
 exports.watch = watch;
 exports.default = build;
+exports.dist = dist;
